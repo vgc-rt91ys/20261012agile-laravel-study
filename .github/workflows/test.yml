@@ -8,7 +8,7 @@ on:
   pull_request:
     branches: [ main, master, develop ]
 
-# 実行する処理
+# 実行する処理(ステップ１)
 jobs:
   test:
     runs-on: ubuntu-latest
