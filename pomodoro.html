@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ポモドーロタイマー</title>
+  <style>
+    :root {
+      --bg-work: #e76f51;
+      --bg-short: #2a9d8f;
+      --bg-long: #457b9d;
+      --current-bg: var(--bg-work);
+      --card-bg: rgba(255, 255, 255, 0.2);
+      --card-border: rgba(255, 255, 255, 0.3);
+      --text-color: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--current-bg);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.5s ease;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+      opacity: 0.95;
+    }
+
+    .mode-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .mode-btn {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mode-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .mode-btn.active {
+      background: #ffffff;
+      color: #333333;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .timer-display {
+      font-size: 5.5rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      user-select: none;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .btn-main {
+      background: #ffffff;
+      color: var(--current-bg);
+      border: none;
+      font-size: 1.25rem;
+      font-weight: 700;
+      padding: 14px 40px;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+      transition: transform 0.1s ease, box-shadow 0.2s ease, color 0.5s ease;
+      min-width: 140px;
+    }
+
+    .btn-main:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-main:active {
+      transform: translateY(0);
+    }
+
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      font-size: 1.1rem;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #ffffff;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .stats {
+      font-size: 0.95rem;
+      opacity: 0.9;
+      margin-bottom: 20px;
+    }
+
+    .tomato-counter {
+      font-size: 1.25rem;
+      margin-top: 6px;
+      letter-spacing: 2px;
+    }
+
+    .settings-panel {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      text-align: center;
+    }
+
+    .settings-panel.open {
+      display: grid;
+    }
+
+    .setting-item label {
+      display: block;
+      font-size: 0.75rem;
+      margin-bottom: 6px;
+      opacity: 0.9;
+    }
+
+    .setting-item input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .setting-item input:focus {
+      outline: none;
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .toggle-settings-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-top: 8px;
+    }
+
+    .toggle-settings-btn:hover {
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🍅 Pomodoro Timer</h1>
+
+    <div class="mode-tabs">
+      <button class="mode-btn active" data-mode="work">作業</button>
+      <button class="mode-btn" data-mode="shortBreak">小休憩</button>
+      <button class="mode-btn" data-mode="longBreak">長休憩</button>
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="timer-display" id="timeDisplay">25:00</div>
+
+    <div class="controls">
+      <button class="btn-main" id="startBtn">START</button>
+      <button class="btn-icon" id="resetBtn" title="リセット">↺</button>
+      <button class="btn-icon" id="skipBtn" title="スキップ">⏭</button>
+    </div>
+
+    <div class="stats">
+      完了したポモドーロ: <span id="completedSessions">0</span> サイクル
+      <div class="tomato-counter" id="tomatoIcons"></div>
+    </div>
+
+    <button class="toggle-settings-btn" id="toggleSettingsBtn">⚙️ 時間設定を変更</button>
+
+    <div class="settings-panel" id="settingsPanel">
+      <div class="setting-item">
+        <label for="workDuration">作業 (分)</label>
+        <input type="number" id="workDuration" min="1" max="90" value="25">
+      </div>
+      <div class="setting-item">
+        <label for="shortBreakDuration">小休憩 (分)</label>
+        <input type="number" id="shortBreakDuration" min="1" max="30" value="5">
+      </div>
+      <div class="setting-item">
+        <label for="longBreakDuration">長休憩 (分)</label>
+        <input type="number" id="longBreakDuration" min="1" max="60" value="15">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // デフォルト設定 (秒単位で管理)
+    const settings = {
+      work: 25 * 60,
+      shortBreak: 5 * 60,
+      longBreak: 15 * 60
+    };
+
+    const modeColors = {
+      work: '#e76f51',
+      shortBreak: '#2a9d8f',
+      longBreak: '#457b9d'
+    };
+
+    let currentMode = 'work';
+    let timeLeft = settings[currentMode];
+    let totalTime = timeLeft;
+    let timerId = null;
+    let isRunning = false;
+    let completedCount = 0;
+
+    // DOM要素
+    const timeDisplay = document.getElementById('timeDisplay');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const skipBtn = document.getElementById('skipBtn');
+    const modeBtns = document.querySelectorAll('.mode-btn');
+    const progressBar = document.getElementById('progressBar');
+    const completedSessions = document.getElementById('completedSessions');
+    const tomatoIcons = document.getElementById('tomatoIcons');
+    const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
+    const settingsPanel = document.getElementById('settingsPanel');
+    const workInput = document.getElementById('workDuration');
+    const shortInput = document.getElementById('shortBreakDuration');
+    const longInput = document.getElementById('longBreakDuration');
+
+    // Web Audio API による終了ベル音の再生
+    function playChime() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+
+        const playTone = (freq, start, duration) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, start);
+
+          gain.gain.setValueAtTime(0.3, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          osc.start(start);
+          osc.stop(start + duration);
+        };
+
+        // 和音のベル音（ポーン、ポーン♪）
+        playTone(523.25, now, 0.8);        // C5
+        playTone(659.25, now + 0.15, 0.8); // E5
+        playTone(783.99, now + 0.3, 1.2);  // G5
+        playTone(1046.50, now + 0.45, 1.5);// C6
+      } catch (e) {
+        console.error('Audio playback error:', e);
+      }
+    }
+
+    // デスクトップ通知リクエスト
+    function requestNotificationPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
+    function showNotification(title, body) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '🍅' });
+      }
+    }
+
+    // 表示更新
+    function updateDisplay() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      
+      timeDisplay.textContent = formatted;
+
+      const modeName = currentMode === 'work' ? '作業' : (currentMode === 'shortBreak' ? '小休憩' : '長休憩');
+      document.title = `(${formatted}) ${modeName} - ポモドーロタイマー`;
+
+      // プログレスバー
+      const progress = totalTime > 0 ? ((totalTime - timeLeft) / totalTime) * 100 : 0;
+      progressBar.style.width = `${progress}%`;
+    }
+
+    // モード切り替え
+    function setMode(mode) {
+      currentMode = mode;
+      totalTime = settings[mode];
+      timeLeft = totalTime;
+
+      // テーマカラーの変更
+      document.documentElement.style.setProperty('--current-bg', modeColors[mode]);
+
+      // タブアクティブ表示
+      modeBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+
+      pauseTimer();
+      updateDisplay();
+    }
+
+    // タイマー開始
+    function startTimer() {
+      requestNotificationPermission();
+
+      if (isRunning) return;
+      isRunning = true;
+      startBtn.textContent = 'PAUSE';
+
+      timerId = setInterval(() => {
+        if (timeLeft > 0) {
+          timeLeft--;
+          updateDisplay();
+        } else {
+          onTimerComplete();
+        }
+      }, 1000);
+    }
+
+    // タイマー一時停止
+    function pauseTimer() {
+      if (!isRunning) return;
+      isRunning = false;
+      startBtn.textContent = 'START';
+      clearInterval(timerId);
+      timerId = null;
+    }
+
+    // タイマー完了時
+    function onTimerComplete() {
+      pauseTimer();
+      playChime();
+
+      if (currentMode === 'work') {
+        completedCount++;
+        completedSessions.textContent = completedCount;
+        tomatoIcons.textContent = '🍅'.repeat(completedCount % 12 || 1);
+        
+        showNotification('ポモドーロ終了！', '作業お疲れ様でした。休憩しましょう！');
+
+        // 4回完了ごとに長休憩、それ以外は小休憩
+        if (completedCount % 4 === 0) {
+          setMode('longBreak');
+        } else {
+          setMode('shortBreak');
+        }
+      } else {
+        showNotification('休憩終了！', '次の作業セッションを始めましょう！');
+        setMode('work');
+      }
+    }
+
+    // タイマーリセット
+    function resetTimer() {
+      pauseTimer();
+      timeLeft = settings[currentMode];
+      totalTime = timeLeft;
+      updateDisplay();
+    }
+
+    // スキップ
+    function skipTimer() {
+      if (confirm('現在のセッションを終了して次へ進みますか？')) {
+        onTimerComplete();
+      }
+    }
+
+    // イベントリスナー
+    startBtn.addEventListener('click', () => {
+      if (isRunning) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    });
+
+    resetBtn.addEventListener('click', resetTimer);
+    skipBtn.addEventListener('click', skipTimer);
+
+    modeBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        setMode(e.target.dataset.mode);
+      });
+    });
+
+    // 設定トグル
+    toggleSettingsBtn.addEventListener('click', () => {
+      settingsPanel.classList.toggle('open');
+      toggleSettingsBtn.textContent = settingsPanel.classList.contains('open') ? '▲ 設定を閉じる' : '⚙️ 時間設定を変更';
+    });
+
+    // 設定値変更
+    function applySettings() {
+      settings.work = Math.max(1, parseInt(workInput.value, 10) || 25) * 60;
+      settings.shortBreak = Math.max(1, parseInt(shortInput.value, 10) || 5) * 60;
+      settings.longBreak = Math.max(1, parseInt(longInput.value, 10) || 15) * 60;
+
+      totalTime = settings[currentMode];
+      timeLeft = totalTime;
+      updateDisplay();
+    }
+
+    [workInput, shortInput, longInput].forEach(input => {
+      input.addEventListener('change', applySettings);
+    });
+
+    // 初期化
+    updateDisplay();
+  </script>
+</body>
+</html>

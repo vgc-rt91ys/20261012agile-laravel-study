@@ -24,4 +24,19 @@ class CalculatorTest extends TestCase
         $this->assertEquals(5, $result);
     }
 
+    /**
+     * 2つの数を掛け算できることをテストする
+     */
+    #[Test]
+    public function it_can_multiply_two_numbers()
+    {
+        // Arrange
+        $calculator = new Calculator();
+
+        // Act
+        $result = $calculator->multiply(2, 5);
+
+        // Assert
+        $this->assertEquals(-3, $result);
+    }
 }
